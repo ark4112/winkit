@@ -5,23 +5,27 @@ import asyncpg
 app = Sanic("Checkout Service")
 db_pool = None
 
+
 async def create_database_pool():
     global db_pool
     db_pool = await asyncpg.create_pool(
         host="localhost",
         port=5432,
-        user="your_username",
-        password="your_password",
-        database="your_database"
+        user="ark",
+        password="aryan123",
+        database="winkit_db"
     )
+
 
 @app.listener('before_server_start')
 async def setup_db(app, loop):
     await create_database_pool()
 
+
 @app.listener('after_server_stop')
 async def close_db(app, loop):
     await db_pool.close()
+
 
 async def calculate_total_price(user_id):
     async with db_pool.acquire() as connection:
@@ -29,18 +33,19 @@ async def calculate_total_price(user_id):
             SELECT SUM(i.price * c.quantity) AS total_price
             FROM cart c
             JOIN items i ON c.item_id = i.id
-            WHERE c.user_id = $1
+            WHERE c.user_id = "123";
         """
         return await connection.fetchval(query, user_id)
+
 
 async def check_item_availability(user_id):
     async with db_pool.acquire() as connection:
         # Assuming we have a separate table for inventory with columns 'item_id' and 'stock'
-        query = """
+        query = f"""
             SELECT c.item_id, c.quantity, i.name, i.stock
             FROM cart c
             JOIN items i ON c.item_id = i.id
-            WHERE c.user_id = $1
+            WHERE c.user_id = {user_id};
         """
         cart_items = await connection.fetch(query, user_id)
         
@@ -52,13 +57,13 @@ async def check_item_availability(user_id):
 
         return not_available_items
 
+
 async def place_order(user_id):
     async with db_pool.acquire() as connection:
-        # Assuming we have a table for orders with columns 'user_id', 'item_id', 'quantity', 'order_id', and 'order_date'
-        query = """
+        query = f"""
             INSERT INTO orders (user_id, item_id, quantity)
             SELECT user_id, item_id, quantity FROM cart
-            WHERE user_id = $1
+            WHERE user_id = {user_id} 
         """
         await connection.execute(query, user_id)
 
@@ -69,6 +74,7 @@ async def place_order(user_id):
         # Return the order ID or any other relevant information
         return json({"message": "Order placed successfully", "order_id": 12345})
 
+
 @app.post("/api/checkout/total")
 async def calculate_total_price_handler(request):
     data = request.json
@@ -76,6 +82,7 @@ async def calculate_total_price_handler(request):
 
     total_price = await calculate_total_price(user_id)
     return json({"total_price": total_price})
+
 
 @app.post("/api/checkout/availability")
 async def check_item_availability_handler(request):
@@ -87,6 +94,7 @@ async def check_item_availability_handler(request):
         return json({"message": "Some items are not available", "not_available_items": not_available_items})
     else:
         return json({"message": "Items are available"})
+
 
 @app.post("/api/checkout/order")
 async def place_order_handler(request):

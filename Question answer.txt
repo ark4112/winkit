@@ -1,0 +1,55 @@
+1. If this service is to be auto-scaled horizontally, are there any challenges we will face with our
+implementation? If so, how do we address it?
+Ans:
+The challenges faced and the methods to resolve them are:-
+
+->Session Management: Horizontal scaling implies multiple instances of the service running concurrently.
+ Handling user sessions and maintaining session state across these instances can be challenging.
+ To address this, we can leverage stateless authentication mechanisms such as JWT (JSON Web Tokens) and
+ store session-related data in a shared and scalable data store like Redis.
+
+->Data Consistency:  Implementing distributed transactions or using event-driven architectures can help maintain data
+ consistency across instances.
+
+->Caching Strategy: Caching frequently accessed data is essential to reduce database load and improve response times.
+  We need to identify which data can be cached and for how long, as well as implement cache invalidation mechanisms
+  to keep cached data up-to-date. Utilizing a distributed caching system like Redis and strategy like LRU can be helpful.
+
+->Load Balancing:  Load balancing should be configured to evenly distribute requests and intelligently route traffic
+
+->Consistency and Communication:  We can utilize message queues, event-driven architectures, or
+publish-subscribe patterns for communication between microservices.
+
+->Monitoring and Scaling Triggers: We can set up monitoring tools to track metrics such as CPU utilization, memory usage,
+ request latency, and database performance. Based on predefined thresholds, we can trigger auto-scaling actions to add
+ or remove instances dynamically.
+
+->Database Scaling: We can explore vertical scaling (increasing database server resources) or consider sharding
+ (partitioning data across multiple database instances) for horizontal scaling of the database.
+
+2. How do we speed up the item search? Any suggestions on improving user experience for this?
+
+For optimizing item search, we can use indexing and put index on item name in items table. Also we can cache frequently
+searched-for items. We can use partial search, search filters on the basis of category, ML based recommendations and
+auto-suggestion to improve overall user experience
+
+3. How do we handle the simultaneous ordering problem for limited inventory, without affecting
+customer experience?
+
+To tackle this challenge without compromising customer satisfaction,
+ we can employ a combination of methods.
+
+-> Real-time Inventory Tracking: Implement real-time inventory tracking to ensure accurate stock levels are available
+across all instances of the service. As soon as an order is placed, the inventory should be updated instantly to
+reflect the new stock levels.
+
+-> Hold Items in Carts: For a limited period, temporarily hold items in a customer's cart when they initiate the
+ checkout process. During this time, the items should be reserved, and the available inventory should be updated
+  accordingly. If the user does not proceed with payment within a reasonable timeframe, the held items can be released
+   back into the inventory for others to order.
+
+->Queue Management: In cases where simultaneous orders exceed the available stock, introduce a fair queue management
+ system. Customers can be placed in a virtual queue with information about the estimated wait time for restocking.
+
+-> Inventory Replenishment: Implement a robust inventory replenishment system.
+  Regularly monitor sales patterns, stock levels, and popular items to proactively restock high-demand products.

@@ -5,32 +5,37 @@ import asyncpg
 app = Sanic("Authentication Service")
 db_pool = None
 
+
 async def create_database_pool():
     global db_pool
     db_pool = await asyncpg.create_pool(
         host="localhost",
         port=5432,
-        user="your_username",
-        password="your_password",
-        database="your_database"
+        user="ark",
+        password="aryan123",
+        database="winkit_db"
     )
+
 
 @app.listener('before_server_start')
 async def setup_db(app, loop):
     await create_database_pool()
 
+
 @app.listener('after_server_stop')
 async def close_db(app, loop):
     await db_pool.close()
 
+
 async def register_user(username, password):
     async with db_pool.acquire() as connection:
-        query = "INSERT INTO users (username, password) VALUES ($1, $2)"
+        query = f"""INSERT INTO users (username, password) VALUES ({username}, {password});"""
         await connection.execute(query, username, password)
+
 
 async def get_user(username):
     async with db_pool.acquire() as connection:
-        query = "SELECT username, password FROM users WHERE username = $1"
+        query = f"""SELECT username, password FROM users WHERE username = {username};"""
         return await connection.fetchrow(query, username)
 
 @app.post("/api/register")
@@ -42,7 +47,7 @@ async def register(request):
     # Check if the username is already taken
     existing_user = await get_user(username)
     if existing_user:
-        return json({"message": "Username is already taken"}, status=409)
+        return json({"message": "Username is already taken"}, status=400)
 
     # Create a new user
     await register_user(username, password)
@@ -65,7 +70,7 @@ async def login(request):
 
         return json({"message": "User logged in successfully", "token": token})
     else:
-        return json({"message": "Invalid username or password"}, status=401)
+        return json({"message": "Invalid username or password"}, status=400)
 
 
 @app.post("/api/logout")
@@ -77,7 +82,7 @@ async def logout(request):
         del sessions[token]
         return json({"message": "User logged out successfully"})
     else:
-        return json({"message": "Invalid session token"}, status=401)
+        return json({"message": "Invalid session token"}, status=400)
 
 
 def generate_session_token(username):
